@@ -23,7 +23,8 @@ post "/recipient" do
 end
 
 delete "/recipient" do
-  Recipient.destroy(session[:recipient_id])
+  @recipient = Recipient.get(session[:recipient_id])
+  @recipient.destroy if @recipient
   session.clear
   redirect "/"
 end
