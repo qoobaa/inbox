@@ -1,4 +1,11 @@
 - if @recipient
+  %p
+    %a{ :href => "/inboxautocomplete.user.js" } Autocompleter
+    (user:
+    = @recipient.token
+    , password:
+    = @recipient.token
+    )
   Your email address is:
   = @recipient.address
   %form{ :method => "post", :action => "/recipient" }

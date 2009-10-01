@@ -62,12 +62,15 @@ class Recipient
   before :destroy, :destroy_mails
 
   def generate_address
-    token = (100_000_000_000 + rand(1_000_000_000)).to_s(36)
     self.address ||= "#{Mail::USER}+#{token}@gmail.com"
   end
 
   def destroy_mails
     mails.all.destroy!
+  end
+
+  def token
+    address ? address[/\+.*@/][1..-2] : (100_000_000_000 + rand(1_000_000_000)).to_s(36)
   end
 end
 
@@ -93,4 +96,10 @@ delete "/recipient" do
   @recipient.destroy if @recipient
   session.clear
   redirect "/"
+end
+
+get "/inboxautocomplete.user.js" do
+  @recipient = Recipient.get(session[:recipient_id])
+  content_type "text/javascript"
+  erb :script
 end

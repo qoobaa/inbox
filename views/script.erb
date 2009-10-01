@@ -1,0 +1,125 @@
+// ==UserScript==
+// @name           Auto Fill any forms with custom information
+// @author         LuckyShot
+// @namespace      http://www.luckyshot.es
+// @description    Autofill and complete online web formularies with your custom data
+// @version        1.5
+// @include        http*://*
+// ==/UserScript==
+
+// FUNCTIONS
+
+GM_registerMenuCommand("Inbox Autocomplete", function() {
+    var inputtexts = [
+        ["", ""], /* This one is used as a wildcard (if you want undetected fields to fill with something) */
+        ["", "captcha", "verif", "response", "cword", "turing", "image", "security", "token", "code"],
+        ["1976", "year", "yy", "birth"],
+        ["7", "month", "mm"],
+        ["21", "day", "dd"],
+        ["33", "age"],
+        ["<%= @recipient.token %>", "user", "display", "login", "nick", "id", "member", "account", "username"],
+        ["Garold", "first", "real"],
+        ["Walker", "last", "surname"],
+        ["Garold Walker", "fullname", "full_name"],
+        ["Who is the best bugger?", "question"],
+        ["bugmenot", "answer"],
+        ["<%= @recipient.address %>", "mail", "list"],
+        ["garoldwalker@hotmail.com", "msn"],
+        ["45592738", "icq"],
+        ["Dr.", "title"],
+        ["(513) 972-6287", "phone"],
+        ["513", "phone1"],
+        ["972", "phone2"],
+        ["6287", "phone3", "ext"],
+        ["(513) 972-6287", "fax"],
+        ["4960 Brandy Run", "address"],
+        ["Dayton, OH 45401", "address2"],
+        ["Dayton", "city", "town"],
+        ["51", "area"],
+        ["OH", "state"],
+        ["United States", "country", "location"],
+        ["45401", "zip", "postal"],
+        ["Feel Good, Inc.", "company", "organization", "organisation"],
+        ["CEO", "position", "occup"],
+        ["I love to dance!", "interest", "hobbie"],
+        ["http://www.luckyshot.es", "web", "url"],
+        ["LuckyShot", "referrer"],
+        ["0", "timezoneoffset"]
+    ];
+
+    var inputpasswords = ["<%= @recipient.token %>", "pass", "pw", "retype", "confirm", "verify", "new_password", "password_confirm"];
+
+    var checkboxes = [
+        ["adminemail", "showemail", "receive", "pm", "news", "mail", "update", "spam", "send", "offer", "agent"], /* Uncheck these */
+        ["rules", "tos", "terms", "coppa", "agree", "accept", "save", "remember", "age", "legal", "confirm", "token"] /* Check these */
+    ];
+
+    var i, j, k;
+
+    // INPUT
+    var textElements = document.getElementsByTagName("input");
+
+    for(i = 0; i < textElements.length; i++) {
+        // INPUT type TEXT
+        if(textElements[i].type == "text") {
+            for(j = 0; j < inputtexts.length; j++) {
+                for (k = 1; k < inputtexts[j].length; k++) {
+                    var lowerit = textElements[i].name.toLowerCase();
+                    if(lowerit.search(inputtexts[j][k]) >= 0) {
+                        textElements[i].value = inputtexts[j][0];
+                    }
+                }
+            }
+        }
+        // INPUT type PASSWORD
+        if(textElements[i].type == "password") {
+            for(k = 1; k < inputpasswords.length; k++) {
+                var lowerit = textElements[i].name.toLowerCase();
+                if(lowerit.search(inputpasswords[k]) >= 0) {
+                    textElements[i].value = inputpasswords[0];
+                }
+            }
+        }
+        // INPUT type CHECKBOX
+        if(textElements[i].type == "checkbox") {
+            for(j = 1; j < checkboxes[0].length; j++) {
+                var lowerit=textElements[i].name.toLowerCase();
+                if(lowerit.search(checkboxes[0][j]) >= 0) {
+                    textElements[i].checked=false;
+                }
+            }
+            for(j = 1; j < checkboxes[1].length; j++){
+                var lowerit = textElements[i].name.toLowerCase();
+                if(lowerit.search(checkboxes[1][j]) >= 0) {
+                    textElements[i].checked=true;
+                }
+            }
+        }
+        // INPUT type RADIO
+        /* Selects the last one */
+        if(textElements[i].type == "radio") {
+            textElements[i].checked = true;
+        }
+    }
+
+    // SELECT
+    /* Selects the middle one */
+    var selects = document.getElementsByTagName("select");
+    for(i = 0; i < selects.length; i++) {
+        var whattoselect = (selects[i].length / 2) - ((selects[i].length % 2) / 2);
+        selects[i].options[whattoselect].selected = true;
+    }
+
+    // Is there any Captcha?
+    for(i = 0; i < textElements.length; i++) {
+        // INPUT type TEXT
+        if(textElements[i].type == "text") {
+            for(k = 1; k < inputtexts[1].length; k++) {
+                var lowerit = textElements[i].name.toLowerCase();
+                if(lowerit.search(inputtexts[1][k]) >= 0) {
+                    textElements[i].focus();
+                }
+            }
+        }
+    }
+});
