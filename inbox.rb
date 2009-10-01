@@ -67,7 +67,7 @@ class Recipient
   end
 
   def destroy_mails
-    mails.all.destroy
+    mails.all.destroy!
   end
 end
 
