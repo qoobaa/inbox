@@ -14,7 +14,8 @@
           %h2= mail.subject
           %h3= mail.sender
           %pre= mail.body
-  %a{ :href => "/" } Refresh
+  %p
+    %a{ :href => "/" } Refresh
 - else
   You have no address yet
   %form{ :method => "post", :action => "/recipient" }
