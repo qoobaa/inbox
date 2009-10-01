@@ -41,21 +41,25 @@ end
 
 class Recipient
   include DataMapper::Resource
-  include DataMapper::Constraints
 
   property :id, Serial
   property :address, String, :nullable => false
   property :created_at, DateTime
-  has n, :mails, :constraint => :destroy
+  has n, :mails
 
   validates_present :address
   validates_is_unique :address
 
   before :valid?, :generate_address
+  before :destroy, :destroy_mails
 
   def generate_address
     token = (100_000_000_000 + rand(1_000_000_000)).to_s(36)
     self.address ||= "#{Mail::USER}+#{token}@gmail.com"
+  end
+
+  def destroy_mails
+    mails.all.destroy
   end
 end
 
