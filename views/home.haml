@@ -1,0 +1,21 @@
+- if @recipient
+  Your email address is:
+  = @recipient.address
+  %form{ :method => "post", :action => "/recipient" }
+    %input{ :name => "_method", :value => "delete", :type => "hidden" }
+    %button Destroy
+  - if @mails.empty?
+    No mail
+  - else
+    Inbox:
+    %ul
+      - @mails.each do |mail|
+        %li
+          %h2= mail.subject
+          %h3= mail.sender
+          %pre= mail.body
+  %a{ :href => "/" } Refresh
+- else
+  You have no address yet
+  %form{ :method => "post", :action => "/recipient" }
+    %button Create
