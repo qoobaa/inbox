@@ -5,13 +5,13 @@ ActiveRecord::Base.establish_connection(dbconfig["production"])
 
 ActiveRecord::Schema.define do
   create_table "mails", :force => true do |t|
-    t.belongs_to  "recipient"
-    t.string   "sender", "subject", "body", "uidl"
+    t.belongs_to "recipient"
+    t.string "sender", "subject", "body", "uidl"
     t.datetime "created_at", "updated_at"
   end
 
   create_table "recipients", :force => true do |t|
-    t.string   "address"
+    t.string "address"
     t.datetime "created_at", "updated_at"
   end
 end

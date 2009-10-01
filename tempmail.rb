@@ -9,8 +9,8 @@ enable :sessions
 
 get "/" do
   # Mail.download
-  @recipient = Recipient.find_by_id(session[:recipient_id])
-  @mails = @recipient.mails if @recipient
+  # @recipient = Recipient.find_by_id(session[:recipient_id])
+  # @mails = @recipient.mails if @recipient
   haml :home
 end
 
