@@ -2,13 +2,13 @@ require "sinatra"
 require "haml"
 require "action_mailer"
 require "active_record"
-# require "net/pop"
+require "net/pop"
 require "models"
 
 enable :sessions
 
 get "/" do
-  Mail.download
+  # Mail.download
   @recipient = Recipient.find_by_id(session[:recipient_id])
   @mails = @recipient.mails if @recipient
   haml :home
