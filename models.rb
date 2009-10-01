@@ -6,7 +6,8 @@ ActiveRecord::Base.establish_connection(dbconfig["production"])
 ActiveRecord::Schema.define do
   create_table "mails", :force => true do |t|
     t.belongs_to "recipient"
-    t.string "sender", "subject", "body", "uidl"
+    t.string "sender", "subject", "uidl"
+    t.text "body"
     t.datetime "created_at", "updated_at"
   end
 
