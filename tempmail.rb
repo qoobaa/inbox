@@ -2,7 +2,7 @@ require "sinatra"
 require "haml"
 require "action_mailer"
 require "active_record"
-require "net/pop"
+# require "net/pop"
 require "models"
 
 enable :sessions
