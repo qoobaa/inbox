@@ -1,7 +1,7 @@
 # ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database =>  "tempmail.sqlite3")
 
-dbconfig = YAML.load(File.read('config/database.yml'))
-ActiveRecord::Base.establish_connection(dbconfig['production'])
+dbconfig = YAML.load(File.read("config/database.yml"))
+ActiveRecord::Base.establish_connection(dbconfig["production"])
 
 ActiveRecord::Schema.define do
   create_table "mails", :force => true do |t|
