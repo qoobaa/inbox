@@ -1,5 +1,6 @@
 # ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database =>  "tempmail.sqlite3")
 
+throw ENV['DATABASE_URI']
 ActiveRecord::Base.establish_connection(:adapter => "postgresql", :database => ENV['DATABASE_URI'])
 
 ActiveRecord::Schema.define do
