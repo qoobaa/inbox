@@ -41,10 +41,12 @@ end
 
 class Recipient
   include DataMapper::Resource
+  include DataMapper::Constraints
+
   property :id, Serial
   property :address, String, :nullable => false
   property :created_at, DateTime
-  has n, :mails
+  has n, :mails, :constraint => :destroy
 
   validates_present :address
   validates_is_unique :address
