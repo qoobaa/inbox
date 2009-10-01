@@ -21,22 +21,22 @@ class Mail < ActiveRecord::Base
   validates_presence_of :recipient
   validates_uniqueness_of :uidl, :scope => :recipient_id
   def self.download
-    pop = Net::POP3.new("pop.gmail.com", 995)
-    pop.enable_ssl
-    pop.start("j78r6b29", "d23occh8")
-    n_mails = pop.n_mails
-    pop.mails.each do |mail|
-      tmail = TMail::Mail.parse(mail.top(64))
-      tmail.to.each do |address|
-        create(:recipient => Recipient.find_by_address(address),
-               :sender => tmail.from.first,
-               :body => tmail.body,
-               :subject => tmail.subject,
-               :uidl => mail.uidl)
+    n_mails = nil
+    Net::POP3.enable_ssl(OpenSSL::SSL::VERIFY_NONE)
+    Net::POP3.start("pop.gmail.com", 995, "j78r6b29", "d23occh8") do |pop|
+      n_mails = pop.n_mails
+      pop.mails.each do |mail|
+        tmail = TMail::Mail.parse(mail.top(64))
+        tmail.to.each do |address|
+          create(:recipient => Recipient.find_by_address(address),
+                 :sender => tmail.from.first,
+                 :body => tmail.body,
+                 :subject => tmail.subject,
+                 :uidl => mail.uidl)
+        end
+        mail.delete
       end
-      mail.delete
     end
-    pop.finish
     n_mails
   end
 end
