@@ -13,9 +13,9 @@
 # Ruby Distribute License.
 # 
 # NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/html/net_pop.html
+# http://www.ruby-lang.org/ja/man/index.cgi?cmd=view;name=net%2Fpop.rb
 # 
-#   $Id: pop.rb 19776 2008-10-14 02:22:46Z kazu $
+#   $Id$
 # 
 # See Net::POP3 for documentation.
 #
@@ -25,7 +25,7 @@ require 'digest/md5'
 require 'timeout'
 
 begin
-  require "openssl/ssl"
+  require "openssl"
 rescue LoadError
 end
 
@@ -196,7 +196,7 @@ module Net
   # 
   class POP3 < Protocol
 
-    Revision = %q$Revision: 19776 $.split[1]
+    Revision = %q$Revision$.split[1]
 
     #
     # Class Parameters
@@ -322,53 +322,38 @@ module Net
     # SSL
     #
 
-    @ssl_params = nil
+    @use_ssl = false
+    @verify = nil
+    @certs = nil
 
-    # call-seq:
-    #    Net::POP.enable_ssl(params = {})
-    #
     # Enable SSL for all new instances.
-    # +params+ is passed to OpenSSL::SSLContext#set_params.
-    def POP3.enable_ssl(*args)
-      @ssl_params = create_ssl_params(*args)
-    end
-
-    def POP3.create_ssl_params(verify_or_params = {}, certs = nil)
-      begin
-        params = verify_or_params.to_hash
-      rescue NoMethodError
-        params = {}
-        params[:verify_mode] = verify_or_params
-        if certs
-          if File.file?(certs)
-            params[:ca_file] = certs
-          elsif File.directory?(certs)
-            params[:ca_path] = certs
-          end
-        end
-      end
-      return params
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_NONE.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_NONE, certs = nil)
+      @use_ssl = true
+      @verify = verify
+      @certs = certs  
     end
 
     # Disable SSL for all new instances.
     def POP3.disable_ssl
-      @ssl_params = nil
-    end
-
-    def POP3.ssl_params
-      return @ssl_params
+      @use_ssl = nil
+      @verify = nil
+      @certs = nil
     end
 
     def POP3.use_ssl?
-      return !@ssl_params.nil?
+      @use_ssl
     end
 
     def POP3.verify
-      return @ssl_params[:verify_mode]
+      @verify
     end
 
     def POP3.certs
-      return @ssl_params[:ca_file] || @ssl_params[:ca_path]
+      @certs
     end
 
     #
@@ -409,9 +394,11 @@ module Net
     # This method does *not* open the TCP connection.
     def initialize(addr, port = nil, isapop = false)
       @address = addr
-      @ssl_params = POP3.ssl_params
-      @port = port
+      @use_ssl = POP3.use_ssl?
+      @port = port || (POP3.use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
       @apop = isapop
+      @certs = POP3.certs
+      @verify = POP3.verify
       
       @command = nil
       @socket = nil
@@ -432,28 +419,28 @@ module Net
 
     # does this instance use SSL?
     def use_ssl?
-      return !@ssl_params.nil?
+      @use_ssl
     end
    
-    # call-seq:
-    #    Net::POP#enable_ssl(params = {})
-    #
     # Enables SSL for this instance.  Must be called before the connection is
     # established to have any effect.
-    # +params[:port]+ is port to establish the SSL connection on; Defaults to 995.
-    # +params+ (except :port) is passed to OpenSSL::SSLContext#set_params.
-    def enable_ssl(verify_or_params = {}, certs = nil, port = nil)
-      begin
-        @ssl_params = verify_or_params.to_hash.dup
-        @port = @ssl_params.delete(:port) || @port
-      rescue NoMethodError
-        @ssl_params = POP3.create_ssl_params(verify_or_params, certs)
-        @port = port || @port
-      end
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_NONE.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    # +port+ is port to establish the SSL connection on; Defaults to 995.
+    def enable_ssl(verify = OpenSSL::SSL::VERIFY_NONE, certs = nil, 
+                   port = POP3.default_pop3s_port)
+      @use_ssl = true
+      @verify = verify
+      @certs = certs
+      @port = port
     end
     
     def disable_ssl
-      @ssl_params = nil
+      @use_ssl = false
+      @verify = nil
+      @certs = nil
     end
 
     # Provide human-readable stringification of class state.
@@ -482,9 +469,7 @@ module Net
     attr_reader :address
 
     # The port number to connect to.
-    def port
-      return @port || (use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
-    end
+    attr_reader :port
 
     # Seconds to wait until a connection is opened.
     # If the POP3 object cannot open a connection within this time,
@@ -531,11 +516,20 @@ module Net
     end
 
     def do_start(account, password)
-      s = timeout(@open_timeout) { TCPSocket.open(@address, port) }
+      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
         context = OpenSSL::SSL::SSLContext.new
-        context.set_params(@ssl_params)
+        context.verify_mode = @verify
+        if @certs
+          if File.file?(@certs)
+            context.ca_file = @certs
+          elsif File.directory?(@certs)
+            context.ca_path = @certs
+          else
+            raise ArgumentError, "certs path is not file/directory: #{@certs}"
+          end
+        end
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
         s.connect
@@ -577,8 +571,6 @@ module Net
 
     def do_finish
       @mails = nil
-      @n_mails = nil
-      @n_bytes = nil
       @command.quit if @command
     ensure
       @started = false
@@ -683,8 +675,9 @@ module Net
     end
 
     def set_all_uids   #:nodoc: internal use only (called from POPMail#uidl)
-      uidl = command().uidl
-      @mails.each {|m| m.uid = uidl[m.number] }
+      command().uidl.each do |num, uid|
+        @mails.find {|m| m.number == num }.uid = uid
+      end
     end
 
     def logging(msg)
@@ -870,10 +863,8 @@ module Net
       @socket = sock
       @error_occured = false
       res = check_response(critical { recv_response() })
-      @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
+      @apop_stamp = res.slice(/<.+>/)
     end
-
-    attr_reader :socket
 
     def inspect
       "#<#{self.class} socket=#{@socket}>"
