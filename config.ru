@@ -1,2 +1,2 @@
-require "tempmail"
+require "inbox"
 run Sinatra::Application

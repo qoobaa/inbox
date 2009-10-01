@@ -1,35 +1,32 @@
-# ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database =>  "tempmail.sqlite3")
+DataMapper.setup(:default, ENV['DATABASE_URL'] || "sqlite3::memory:")
 
-dbconfig = YAML.load(File.read("config/database.yml"))
-ActiveRecord::Base.establish_connection(dbconfig["production"])
+class Mail
+  include DataMapper::Resource
 
-ActiveRecord::Schema.define do
-  create_table "mails", :force => true do |t|
-    t.belongs_to "recipient"
-    t.string "sender", "subject", "uidl"
-    t.text "body"
-    t.datetime "created_at", "updated_at"
-  end
+  USER = "j78r6b29"
+  PASSWORD = "d23occh8"
 
-  create_table "recipients", :force => true do |t|
-    t.string "address"
-    t.datetime "created_at", "updated_at"
-  end
-end
+  property :id, Serial
+  property :subject, String
+  property :uidl, String, :nullable => false
+  property :sender, String
+  property :body, Text
+  property :created_at, DateTime
 
-class Mail < ActiveRecord::Base
   belongs_to :recipient
-  validates_presence_of :recipient
-  validates_uniqueness_of :uidl, :scope => :recipient_id
+
+  validates_present :recipient
+  validates_is_unique :uidl, :scope => :recipient_id
+
   def self.download
     n_mails = nil
     Net::POP3.enable_ssl(OpenSSL::SSL::VERIFY_NONE)
-    Net::POP3.start("pop.gmail.com", 995, "j78r6b29", "d23occh8") do |pop|
+    Net::POP3.start("pop.gmail.com", 995, USER, PASSWORD) do |pop|
       n_mails = pop.n_mails
       pop.mails.each do |mail|
         tmail = TMail::Mail.parse(mail.top(64))
         tmail.to.each do |address|
-          create(:recipient => Recipient.find_by_address(address),
+          create(:recipient => Recipient.first(:address => address),
                  :sender => tmail.from.first,
                  :body => tmail.body,
                  :subject => tmail.subject,
@@ -42,13 +39,22 @@ class Mail < ActiveRecord::Base
   end
 end
 
-class Recipient < ActiveRecord::Base
-  has_many :mails, :dependent => :destroy
-  validates_presence_of :address
-  validates_uniqueness_of :address
-  before_validation_on_create :generate_address
+class Recipient
+  include DataMapper::Resource
+  property :id, Serial
+  property :address, String, :nullable => false
+  property :created_at, DateTime
+  has n, :mails
+
+  validates_present :address
+  validates_is_unique :address
+
+  before :valid?, :generate_address
+
   def generate_address
     token = (100_000_000_000 + rand(1_000_000_000)).to_s(36)
-    self.address = "j78r6b29+#{token}@gmail.com"
+    self.address ||= "#{Mail::USER}+#{token}@gmail.com"
   end
 end
+
+DataMapper.auto_migrate!
